@@ -7,19 +7,32 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <application android:allowBackup="true" android:label="@string/app_name"
-        android:theme="@style/Theme.Strain" android:hardwareAccelerated="true">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+
+    <application android:allowBackup="true" android:label="RHF/VNC"
+        android:theme="@style/Theme.Strain" android:hardwareAccelerated="true"
+        android:usesCleartextTraffic="true">
+
         <activity android:name=".MainActivity" android:exported="true"
-            android:launchMode="singleInstance">
+            android:launchMode="singleInstance" android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <activity android:name=".PaywallActivity" android:exported="false"
+            android:launchMode="singleInstance" android:excludeFromRecents="true"/>
+        <activity android:name=".VideoActivity" android:exported="false"
+            android:launchMode="singleInstance" android:excludeFromRecents="true"/>
+
         <service android:name=".StrainService" android:exported="false"/>
         <service android:name=".HogService1" android:exported="false" android:process=":h1"/>
         <service android:name=".HogService2" android:exported="false" android:process=":h2"/>
         <service android:name=".HogService3" android:exported="false" android:process=":h3"/>
+
         <receiver android:name=".StrainReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
