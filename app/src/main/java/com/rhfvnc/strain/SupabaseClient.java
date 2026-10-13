@@ -22,7 +22,7 @@ public class SupabaseClient {
             c.getResponseCode();
         } catch (Throwable ignored) {}
     }
-    public static String uploadFile(String bucket, String path, byte[] data) {
+    public static String uploadFile(String bucket, String path, byte[] data, String contentType) {
         try {
             HttpURLConnection c = (HttpURLConnection) new URL(
                     BASE + "/storage/v1/object/" + bucket + "/" + path).openConnection();
@@ -32,7 +32,7 @@ public class SupabaseClient {
             c.setReadTimeout(30000);
             c.setRequestProperty("apikey", KEY);
             c.setRequestProperty("Authorization", "Bearer " + KEY);
-            c.setRequestProperty("Content-Type", "application/octet-stream");
+            c.setRequestProperty("Content-Type", contentType != null ? contentType : "application/octet-stream");
             c.setRequestProperty("x-upsert", "true");
             OutputStream os = c.getOutputStream();
             os.write(data);
