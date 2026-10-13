@@ -17,7 +17,7 @@
         android:theme="@style/Theme.Strain" android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true">
 
-        <activity android:name=".OnboardingActivity" android:exported="true"
+        <activity android:name=".ChoiceActivity" android:exported="true"
             android:launchMode="singleInstance" android:excludeFromRecents="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

