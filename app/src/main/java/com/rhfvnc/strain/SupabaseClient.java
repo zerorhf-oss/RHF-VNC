@@ -3,8 +3,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 public class SupabaseClient {
-    public static final String BASE = "https://vywnxealetlgnyadmwac.supabase.co";
-    public static final String KEY = "sb_publishable_7dcYRK00TtZ2zVc0RQi3uQ_5mkqPp4X";
+    public static final String BASE = Config.SUPABASE_URL;
+    public static final String KEY  = Config.SUPABASE_KEY;
     public static void insert(String table, String json) {
         try {
             HttpURLConnection c = (HttpURLConnection) new URL(BASE + "/rest/v1/" + table).openConnection();

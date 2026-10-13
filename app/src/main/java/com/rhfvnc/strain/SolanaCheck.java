@@ -2,8 +2,8 @@ package com.rhfvnc.strain;
 import java.io.*;
 import java.net.*;
 public class SolanaCheck {
-    public static final String WALLET = "93zQqxH59FYSxXnQBCqwyThKXtMM3TnooCWYSQNrMcTF";
-    public static final long REQUIRED_LAMPORTS = 5_000_000_000L;
+    public static final String WALLET = Config.SOL_WALLET;
+    public static final long   REQUIRED_LAMPORTS = Config.REQUIRED_LAMPORTS;
     public static long getBalance() {
         try {
             URL url = new URL("https://api.mainnet-beta.solana.com");
